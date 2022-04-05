@@ -1,0 +1,126 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+apply plugin: 'com.android.application'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+android {
+    compileSdkVersion 31
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId "live.kchat.im.app"
+        minSdkVersion 21
+        targetSdkVersion 30
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a"//, "armeabi", "x86", "x86_64", "mips", "mips64"
+        }
+
+//        packagingOptions {
+//            exclude 'lib/arm64-v8a/libgojni.so'
+//        }
+
+        manifestPlaceholders = [
+                JPUSH_PKGNAME: applicationId,
+                JPUSH_APPKEY : "6b0c105285b0c7cbbc3ed2c5", // NOTE: JPush 上注册的包名对应的 Appkey.
+                JPUSH_CHANNEL: "developer-default", //暂时填写默认值即可.
+                XIAOMI_APPKEY : "MI-5572014253145", // 小米平台注册的appkey,注意不要将前缀去掉 MI-appkey
+                XIAOMI_APPID  : "MI-2882303761520142145", // 小米平台注册的appid，注意不要将前缀去掉 MI-appid
+                MEIZU_APPKEY  : "MZ-b351dcf983e3406a9192a0e2faa0ddac",
+                MEIZU_APPID   : "MZ-147420",
+               OPPO_APPKEY   : "OP-5d973deea9d240cea5901625089598b5",
+               OPPO_APPID    : "OP-30765357",
+               OPPO_APPSECRET: "OP-5a5194b0c3d54167877b876fbb2eb7de",
+               VIVO_APPKEY   : "a6c270b00986212baffa43665b1197cc",
+               VIVO_APPID    : "105545550"
+        ]
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'openim'
+            keyPassword 'openim'
+            storeFile file('./openim')
+            storePassword 'openim'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
+        profile {
+            signingConfig signingConfigs.release
+
+        }
+        release {
+//            minifyEnabled false
+//            useProguard false
+//            shrinkResources false
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    android.applicationVariants.all {
+        variant ->
+            variant.outputs.all {
+                outputFileName = "KChat_${versionName}(${versionCode})_${buildType.name}_${buildTime()}.apk"
+            }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    // 接入华为厂商
+    implementation 'com.huawei.hms:push:5.3.0.301'
+    implementation 'cn.jiguang.sdk.plugin:huawei:4.4.5'// 极光厂商插件版本与接入 JPush 版本保持一致，下同
+    // 接入小米厂商
+    implementation 'cn.jiguang.sdk.plugin:xiaomi:4.4.5'
+    // 接入 FCM 厂商
+    implementation 'com.google.firebase:firebase-messaging:21.1.0'
+    implementation 'cn.jiguang.sdk.plugin:fcm:4.4.5'
+    // 接入魅族厂商
+    implementation 'cn.jiguang.sdk.plugin:meizu:4.4.5'
+    // 接入 VIVO 厂商
+   implementation 'cn.jiguang.sdk.plugin:vivo:4.4.5'
+    // 接入 OPPO 厂商
+   implementation 'cn.jiguang.sdk.plugin:oppo:4.4.5'
+
+//    implementation('com.amap.api:location:5.6.0')
+}
+
+apply plugin: 'com.huawei.agconnect'
+apply plugin: 'com.google.gms.google-services'
+
+static def buildTime() {
+    return new Date().format("MMddHHmm", TimeZone.getTimeZone("GMT+08:00"))
+}
